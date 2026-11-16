@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 class MyHomePage extends StatelessWidget {
   MyHomePage({super.key});
 
-  final String npm = "2406000001";
-  final String nama = "Burhan";
+  // Identitas pemilik portofolio yang ditampilkan pada tiga InfoCard.
+  final String npm = "2506656860";
+  final String nama = "Karyn Isabelle Dexter";
   final String kelas = "PBP A";
 
+  // Tombol aksi portofolio. Warna latar disimpan di model, sehingga
+  // ItemCard cukup membaca item.color tanpa percabangan if-else.
   final List<ItemHomepage> items = [
-    ItemHomepage("Lihat Proyek", Icons.folder),
-    ItemHomepage("Tambah Proyek", Icons.add_circle),
-    ItemHomepage("Logout", Icons.logout),
+    ItemHomepage("Lihat Education", Icons.school, Colors.blue.shade700),
+    ItemHomepage("Tambah Education", Icons.add_circle, Colors.green.shade700),
+    ItemHomepage("Logout", Icons.logout, Colors.red.shade700),
   ];
 
   @override
@@ -116,11 +119,18 @@ class InfoCard extends StatelessWidget {
   }
 }
 
+/// Model data untuk satu tombol aksi di halaman menu.
 class ItemHomepage {
+  /// Nama tombol, juga dipakai pada pesan SnackBar.
   final String name;
+
+  /// Ikon yang ditampilkan di atas nama tombol.
   final IconData icon;
 
-  ItemHomepage(this.name, this.icon);
+  /// Warna latar kartu tombol.
+  final Color color;
+
+  ItemHomepage(this.name, this.icon, this.color);
 }
 
 class ItemCard extends StatelessWidget {
@@ -131,8 +141,8 @@ class ItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      // Menggunakan warna sekunder dari skema tema aplikasi.
-      color: Theme.of(context).colorScheme.secondary,
+      // Warna latar diambil dari model, sehingga setiap tombol berbeda warna.
+      color: item.color,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         // Aksi ketika kartu ditekan oleh pengguna.
