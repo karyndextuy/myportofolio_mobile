@@ -62,14 +62,17 @@ void main() {
     ) async {
       await tester.pumpWidget(const MyApp());
 
-      for (final name in buttonNames.where((n) => n != 'Tambah Proyek')) {
+      const navigatingButtons = {'Tambah Proyek', 'Tambah Education'};
+      for (final name in buttonNames.where(
+        (n) => !navigatingButtons.contains(n),
+      )) {
         await tester.ensureVisible(find.text(name));
         await tester.tap(find.text(name));
         // SnackBar lama ditutup dulu (animasi), baru SnackBar baru muncul.
         await tester.pumpAndSettle();
 
         expect(find.text('Kamu telah menekan tombol $name!'), findsOneWidget);
-        expect(find.byType(ProjectFormPage), findsNothing);
+        expect(find.byType(MyHomePage), findsOneWidget);
       }
     });
   });
