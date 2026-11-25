@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:myportofolio_mobile/main.dart';
 import 'package:myportofolio_mobile/screens/education_form.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
+import 'package:myportofolio_mobile/screens/login_screen.dart';
 import 'package:myportofolio_mobile/screens/project_form.dart';
 
-/// Field teks pada form yang berlabel [label].
-Finder field(String label) => find.widgetWithText(TextFormField, label);
+import 'helpers.dart';
 
 /// Isi teks yang sedang tertulis di field berlabel [label].
 String fieldText(WidgetTester tester, String label) {
@@ -16,19 +15,6 @@ String fieldText(WidgetTester tester, String label) {
     matching: find.byType(EditableText),
   );
   return tester.widget<EditableText>(editable).controller.text;
-}
-
-Future<void> openDrawer(WidgetTester tester) async {
-  await tester.tap(find.byTooltip('Open navigation menu'));
-  await tester.pumpAndSettle();
-}
-
-/// Font test Flutter menggambar tiap huruf sebagai kotak selebar ukuran
-/// font, jadi teks header drawer jauh lebih lebar daripada di aplikasi asli.
-/// Skala teks diperkecil agar header drawer tidak overflow di test.
-void shrinkTextForDrawer(WidgetTester tester) {
-  tester.platformDispatcher.textScaleFactorTestValue = 0.5;
-  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 }
 
 /// Memilih tanggal [day] pada bulan yang sedang ditampilkan date picker.
@@ -58,7 +44,7 @@ Future<void> tapSimpan(WidgetTester tester) async {
 }
 
 Future<void> openForm(WidgetTester tester) async {
-  await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+  await pumpPage(tester, const EducationFormPage());
 }
 
 /// Tanggal pada bulan berjalan, karena date picker dibuka di bulan ini.
@@ -72,7 +58,7 @@ void main() {
     testWidgets('Kartu Tambah Education membuka form dengan push', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(const MyApp());
+      await pumpApp(tester, FakeBackend());
 
       await tester.ensureVisible(find.text('Tambah Education'));
       await tester.tap(find.text('Tambah Education'));
@@ -95,7 +81,7 @@ void main() {
       WidgetTester tester,
     ) async {
       shrinkTextForDrawer(tester);
-      await tester.pumpWidget(const MyApp());
+      await pumpApp(tester, FakeBackend());
 
       await openDrawer(tester);
       expect(find.text('Home'), findsOneWidget);
@@ -111,6 +97,9 @@ void main() {
       await openDrawer(tester);
       await tester.tap(find.text('Add Project'));
       await tester.pumpAndSettle();
+      // Add Project dilindungi: login dulu, lalu form proyek terbuka.
+      expect(find.byType(LoginScreen), findsOneWidget);
+      await submitLogin(tester);
       expect(find.byType(ProjectFormPage), findsOneWidget);
 
       await openDrawer(tester);
@@ -123,7 +112,7 @@ void main() {
       WidgetTester tester,
     ) async {
       shrinkTextForDrawer(tester);
-      await tester.pumpWidget(const MyApp());
+      await pumpApp(tester, FakeBackend());
 
       await tester.ensureVisible(find.text('Tambah Education'));
       await tester.tap(find.text('Tambah Education'));

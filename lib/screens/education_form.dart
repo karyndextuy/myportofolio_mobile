@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:myportofolio_mobile/utils/url_validator.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 
 /// Halaman formulir untuk menambah satu riwayat pendidikan (Education).
@@ -165,7 +166,7 @@ class _EducationFormPageState extends State<EducationFormPage> {
                         if (url.length > _maxUrlLength) {
                           return "URL maksimal $_maxUrlLength karakter.";
                         }
-                        if (!_isValidUrl(url)) {
+                        if (!isValidHttpUrl(url)) {
                           return "Masukkan URL lengkap yang diawali http:// atau https://.";
                         }
                         return null;
@@ -284,19 +285,6 @@ class _EducationFormPageState extends State<EducationFormPage> {
         );
       },
     );
-  }
-
-  /// URL dianggap valid bila memakai skema http/https dan host-nya berupa
-  /// nama domain (mengandung titik) atau `localhost`.
-  static bool _isValidUrl(String value) {
-    if (value.contains(' ')) return false;
-    final uri = Uri.tryParse(value);
-    if (uri == null) return false;
-    if (uri.scheme != 'http' && uri.scheme != 'https') return false;
-    final host = uri.host;
-    if (host.isEmpty) return false;
-    if (host == 'localhost') return true;
-    return host.contains('.') && !host.startsWith('.') && !host.endsWith('.');
   }
 }
 

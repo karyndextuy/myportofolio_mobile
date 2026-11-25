@@ -64,14 +64,29 @@ Each button's name, icon, and color live together in the `ItemHomepage` model, s
    git clone https://github.com/karyndextuy/myportofolio_mobile.git
    cd myportofolio_mobile
    ```
-3. Get the dependencies:
+3. Get the dependencies and generate the JSON model code (`*.g.dart` files are not committed):
    ```
    flutter pub get
+   dart run build_runner build --delete-conflicting-outputs
    ```
-4. Run the app in Chrome (or `flutter run` for an emulator or a connected device):
-   ```
-   flutter run -d chrome
-   ```
+4. Start the Django backend from the `myportofolio` repository (`python manage.py runserver`), then run the app. `API_BASE_URL` tells the app where the backend is:
+
+   | Target | Command |
+   |---|---|
+   | Chrome | `flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000` |
+   | Android emulator | `flutter run` (default `http://10.0.2.2:8000`) |
+   | Android phone (USB) | `adb reverse tcp:8000 tcp:8000` then `flutter run --dart-define=API_BASE_URL=http://localhost:8000` |
+   | Deployed backend | `flutter run --dart-define=API_BASE_URL=https://karyn-isabelle-myportofolio.pws.cs.ui.ac.id` |
+
+   The project list is public. Adding a project needs a login with a Django account; only the portfolio owner (superuser) can actually create one.
+
+### CI/CD
+
+`.github/workflows/main.yaml` runs on every push to `main` and every pull request:
+- **build** (Very Good Workflows): `build_runner`, `dart format`, `flutter analyze`, and the tests with coverage.
+- **build_apk**: runs only after `build` passes, builds a release APK, and uploads it as the `app-release-apk` artifact on the Actions run page.
+
+The APK uses the repository variable `API_BASE_URL` (Settings → Secrets and variables → Actions → Variables). If it is not set, the workflow falls back to the PWS domain, so an empty value never overrides the default. Both jobs use Flutter 3.47.9, the same version used locally.
 
 ### Checking the code
 
@@ -104,6 +119,14 @@ flutter test      # all widget tests in test/
 - Added `EducationFormPage` (`lib/screens/education_form.dart`) for my Education section, with the fields and rules of the Django `Education` model (see the table above).
 - The Tambah Education card now opens it with `Navigator.push`, and the drawer has a new **Add Education** option. Home and Add Project are unchanged, and all three pages use the same drawer.
 - Added `test/education_form_test.dart`: opening the form from the card and from the drawer, Back and Home returning to the menu, rejected input (empty, spaces only, too long, bad URL, end date before start date), the summary dialog, resetting after OK, and a 360 x 640 phone screen with the keyboard open.
+
+### Tutorial 10
+- **Django backend** (`myportofolio` repo): added `django-cors-headers` and `rest_framework.authtoken`, made `TokenAuthentication` the first authentication class (requests without credentials now get 401 instead of 403), removed the session-only decorators from the API views, and added `POST /api/v1/auth/token/` and `POST /api/v1/auth/logout/`. `ALLOWED_HOSTS` is now an explicit list that includes `10.0.2.2` and the PWS domain. 13 new Django tests cover login, token POST, invalid tokens, logout, and CORS (90 tests in total).
+- **Model and networking:** `Project` (`lib/models/project.dart`) with `@JsonSerializable(fieldRename: FieldRename.snake)`, and `ApiClient` (`lib/services/api_client.dart`) with `getProjects`, `createProject`, `obtainToken`, and `logout`.
+- **Screens:** `ProjectListScreen` (`FutureBuilder`, pull-to-refresh, empty and error states with Retry) and `ProjectDetailScreen` (the image is shown only when its URL is not empty). Lihat Proyek and the new **Projects** drawer option open the list without a login.
+- **Authentication:** `AuthState` (`ChangeNotifier`) provided with `MultiProvider`, `LoginScreen`, and the `ensureLoggedIn` guard. Tambah Proyek and Add Project open the login screen first when the user is not logged in. The drawer shows Login or Logout depending on the state, and the Logout card revokes the token.
+- **Project form:** the fields now match `ProjectSerializer` (Title, Description, Tech Stack, Project URL, Project Image URL). Save sends a `POST` with the token: 201 shows a confirmation dialog; 401 logs out, asks for a new login, and then sends the project again; 400/403/network errors show a SnackBar with a readable message.
+- **CI/CD:** GitHub Actions workflow (see above). 56 Flutter tests use a fake backend built on `MockClient` from `package:http/testing.dart`.
 
 ## Reflection Questions
 
@@ -184,3 +207,13 @@ For Tugas 8, it read the `Education` model and `EducationForm` in my Django repo
 - **Test font vs. real font.** The drawer header overflowed only in tests, because the Flutter test font draws every letter as a square as wide as the font size. The tests use a smaller text scale for that check instead of changing the tutorial's drawer.
 - **`material_ui` import.** Tutorial 9 says to run `flutter pub add material_ui` on Flutter 3.47. The AI's attempt to run it was blocked on my machine, so the project still imports `package:flutter/material.dart`, which works without warnings on Flutter 3.47.
 
+
+### Tutorial 10
+**AI contributions:** the Django settings, `api_logout`, the auth URLs and the 13 new Django tests; the Flutter model, `ApiClient`, `AuthState`, login screen, route guard, list/detail screens, the API-backed project form.
+
+**What had to be caught or corrected:**
+- **401 instead of 403.** Putting `TokenAuthentication` first changes the status for requests without credentials from 403 to 401, which is what the tutorial wants. Four existing Django tests expected 403 for anonymous users; they were updated, while logged-in users without permission still get 403.
+- **Spinner behind the dialog.** The first version of the project form reset its loading state only after the success dialog or login screen was closed, so the Save spinner kept spinning behind them. The tests caught it (they timed out waiting for the animation to stop); the form now stops the spinner as soon as the request finishes.
+- **Network errors.** The tutorial's `AuthState.logout()` only catches `ApiException`. If the server cannot be reached, the error is a different type and would have escaped to the Logout button, so network errors are caught as well; the local token is cleared either way.
+- **CI Flutter version.** Without a pinned version, CI would use the newest Flutter, where (according to Tutorial 9) the `package:flutter/material.dart` import gives deprecation warnings that fail `flutter analyze`. Both jobs are pinned to 3.47.9, the version on my laptop.
+- **Verified against the real backend.** Besides the tests, `ApiClient` was run against my local `runserver`: it parsed my real project data, and wrong passwords (400) and invalid tokens (401) were reported correctly. The APK build could not be tried locally because the Android SDK is not installed on my laptop; it runs on GitHub Actions.

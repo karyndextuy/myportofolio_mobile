@@ -1,5 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- usesCleartextTraffic mengizinkan HTTP biasa ke http://10.0.2.2:8000 saat
+         pengembangan lokal. Hapus untuk build rilis yang hanya memakai HTTPS. -->
     <application
+        android:usesCleartextTraffic="true"
         android:label="myportofolio_mobile"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
